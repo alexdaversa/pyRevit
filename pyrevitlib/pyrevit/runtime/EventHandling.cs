@@ -915,17 +915,20 @@ namespace PyRevitLabs.PyRevit.Runtime {
         // updating view tab colors
         public static Dictionary<long, Brush> DocumentBrushes;
         public static List<SolidColorBrush> DocumentBrushTheme = new List<SolidColorBrush> {
-                PyRevitConsts.PyRevitAccentBrush,
-                PyRevitConsts.PyRevitBackgroundBrush,
-                Brushes.Gray,
-                Brushes.SaddleBrown,
-                Brushes.Gold,
-                Brushes.DarkTurquoise,
-                Brushes.OrangeRed,
-                Brushes.Aqua,
+                Brushes.Firebrick,
+                Brushes.DodgerBlue,
+                Brushes.Goldenrod,
+                Brushes.MediumSeaGreen,
+                Brushes.SteelBlue,
+                Brushes.Sienna,
                 Brushes.YellowGreen,
+                Brushes.SlateBlue,
                 Brushes.DeepPink,
-                Brushes.White
+                Brushes.ForestGreen,
+                Brushes.OrangeRed,
+                Brushes.DarkTurquoise,
+                Brushes.DarkOrchid,
+                Brushes.Crimson
             };
 
 #if !(REVIT2013 || REVIT2014 || REVIT2015 || REVIT2016 || REVIT2017 || REVIT2018)
@@ -1063,9 +1066,9 @@ namespace PyRevitLabs.PyRevit.Runtime {
                                     if (GetTabDocumentId(tab) == docId) {
                                         tab.BorderBrush = docBrush;
                                         if (doc.IsFamilyDocument)
-                                            tab.BorderThickness = new System.Windows.Thickness(1);
+                                            tab.BorderThickness = new System.Windows.Thickness(2);
                                         else
-                                            tab.BorderThickness = new System.Windows.Thickness(0, 1, 0, 0);
+                                            tab.BorderThickness = new System.Windows.Thickness(0, 2, 0, 0);
                                     }
                                 }
                             }
