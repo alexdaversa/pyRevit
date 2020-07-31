@@ -77,6 +77,8 @@ class CommitTypes(object):
         name='Deleted',
         ends_history=True)
 
+    NotIssued = CommitType(order=8, idx='notissued', name='Not Issued')
+
     @staticmethod
     def get_types():
         return [getattr(CommitTypes, x) for x in dir(CommitTypes)
@@ -131,7 +133,8 @@ class CommitPointTypes(object):
                               CommitTypes.Issued,
                               CommitTypes.Updated,
                               CommitTypes.Merged,
-                              CommitTypes.Deleted],
+                              CommitTypes.Deleted,
+                              CommitTypes.NotIssued],
         allowed_history_start_commit_types=[CommitTypes.Created,
                                             CommitTypes.IssuedRe],
         allowed_history_end_commit_types=[CommitTypes.Deleted,

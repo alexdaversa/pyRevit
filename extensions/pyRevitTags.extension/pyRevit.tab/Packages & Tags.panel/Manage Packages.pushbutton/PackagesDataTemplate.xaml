@@ -46,5 +46,8 @@
         <DataTrigger Binding="{{Binding {param}.ctypeidx}}" Value="deleted">
             <Setter TargetName="committypeshape" Property="Style" Value="{{DynamicResource DeletedSymbol}}"/>
         </DataTrigger>
+        <DataTrigger Binding="{{Binding {param}.ctypeidx}}" Value="notissued">
+            <Setter TargetName="committypeshape" Property="Style" Value="{{DynamicResource NotIssuedSymbol}}"/>
+        </DataTrigger>
     </DataTemplate.Triggers>
 </DataTemplate>

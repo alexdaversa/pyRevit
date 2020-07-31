@@ -16,12 +16,13 @@ class CommitConfigs(object):
     def __init__(self):
         commit_types = OrderedDict()
         commit_types[CommitTypes.Created] = '■'
-        commit_types[CommitTypes.Issued] = '◊'
-        commit_types[CommitTypes.IssuedRe] = '□'
-        commit_types[CommitTypes.Updated] = '●'
-        commit_types[CommitTypes.Revised] = '●'
-        commit_types[CommitTypes.Merged] = '∩'
+        commit_types[CommitTypes.Issued] = '■'
+        commit_types[CommitTypes.IssuedRe] = '■'
+        commit_types[CommitTypes.Updated] = '■'
+        commit_types[CommitTypes.Revised] = '■'
+        commit_types[CommitTypes.Merged] = '■'
         commit_types[CommitTypes.Deleted] = 'X'
+        commit_types[CommitTypes.NotIssued] = '-'
 
         self._value_dict = commit_types
 

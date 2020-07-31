@@ -61,6 +61,11 @@
             <Setter Property="Points" Value="3,0 8,5 13,0 16,3 11,8 16,13 13,16 8,11 3,16 0,13 5,8 0,3" />
         </Style>
 
+        <Style x:Key="NotIssuedSymbol" TargetType="{x:Type Polygon}" BasedOn="{StaticResource SymbolBase}">
+            <Setter Property="Fill" Value="{StaticResource GridColor}" />
+            <Setter Property="Points" Value="3,0 8,5 13,0 16,3 11,8 16,13 13,16 8,11 3,16 0,13 5,8 0,3" />
+        </Style>
+
         <ControlTemplate x:Key="CommitTypeListItemControlTemplate">
             <WrapPanel>
                 <Polygon x:Name="ctypelistshape"/>
@@ -87,6 +92,9 @@
                 </DataTrigger>
                 <DataTrigger Binding="{Binding ctypeidx}" Value="deleted">
                     <Setter TargetName="ctypelistshape" Property="Style" Value="{StaticResource DeletedSymbol}"/>
+                </DataTrigger>
+                <DataTrigger Binding="{Binding ctypeidx}" Value="notissued">
+                    <Setter TargetName="ctypelistshape" Property="Style" Value="{StaticResource NotIssuedSymbol}"/>
                 </DataTrigger>
             </ControlTemplate.Triggers>
         </ControlTemplate>
@@ -159,9 +167,13 @@
                         <Polygon Style="{StaticResource RevisedSymbol}" Margin="0,0,5,0"/>
                         <TextBlock Text="Revised"/>
                     </WrapPanel>
-                    <WrapPanel Margin="0,0,0,0">
+                    <WrapPanel Margin="0,0,0,5">
                         <Polygon Style="{StaticResource RevisedSymbol}" Margin="0,0,5,0" Fill="{StaticResource GridColor}"/>
                         <TextBlock Text="Revised (ReadOnly)"/>
+                    </WrapPanel>
+                    <WrapPanel Margin="0,0,0,0">
+                        <Polygon Style="{StaticResource NotIssuedSymbol}" Margin="0,0,5,0"/>
+                        <TextBlock Text="Not Issued"/>
                     </WrapPanel>
                 </StackPanel>
             </GroupBox>
