@@ -121,7 +121,6 @@
         },
         {
             "builtin": "False",
-            "default_enabled": "True",
             "type": "extension",
             "rocket_mode_compatible": "True",
             "name": "pyChilizer",
@@ -135,7 +134,6 @@
         },
         {
             "builtin": "False",
-            "default_enabled": "True",
             "type": "extension",
             "rocket_mode_compatible": "True",
             "name": "pySSG",
@@ -143,7 +141,7 @@
             "author": "Kyle Bruxvoort",
             "author_profile": "https://kbrux.com",
             "url": "https://github.com/kbruxvoort/SSG.extension.git",
-            "website": "https://archilizer.com",
+            "website": "https://github.com/kbruxvoort/SSG.extension",
             "image": "",
             "templates": {
                 "youtube": "https://www.youtube.com/watch?v=",

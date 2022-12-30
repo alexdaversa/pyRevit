@@ -2,8 +2,9 @@
 # pylint: disable=invalid-name,broad-except
 import re
 import logging
+import json
 from typing import Dict
-from collections import namedtuple, defaultdict
+from collections import defaultdict
 
 # dev scripts
 from scripts import configs
@@ -16,21 +17,22 @@ import _props as props
 logger = logging.getLogger()
 
 
-class ChangeAspect:
+class ChangeClass:
     """Type representing an aspect of a change (Subsystem, etc.)"""
-    DefaultPattern = "- Resolved {ticket}: {title}"
+
+    DefaultPattern = "- Resolved #{number}: {title}"
 
     def __init__(self, label: github.LabelInfo) -> None:
         self._label = label
         self._aspect_type = None
-        self._aspect_pattern = ChangeAspect.DefaultPattern
+        self._aspect_pattern = ChangeClass.DefaultPattern
         if m := re.match(r".*\[(.+?)(->(.+?))?\].*", label.description):
             self._aspect_type = m.groups()[0]
             if pattern := m.groups()[2]:
                 self._aspect_pattern = f"- {pattern}"
 
-    def __eq__(x, y):
-        return isinstance(y, x.__class__) and hash(x) == hash(y)
+    def __eq__(self, y):
+        return isinstance(y, self.__class__) and hash(self) == hash(y)
 
     def __hash__(self) -> int:
         return hash(self._label.name)
@@ -61,16 +63,14 @@ class Change:
             self._ticketdata = Change.get_ticket_info(self._commit_ticket)
 
     def __str__(self) -> str:
-        message = ChangeAspect.DefaultPattern
+        message = ChangeClass.DefaultPattern
         if self.classes:
             default_class = self.classes[0]
             if default_class.pattern:
                 message = default_class.pattern
 
         return message.format(
-            ticket=self.ticket,
-            url=self.url,
-            title=self.title
+            number=self.ticket, url=self.url, title=self.title
         )
 
     @classmethod
@@ -101,8 +101,8 @@ class Change:
 
     @property
     def ticket(self):
-        """Ticket #"""
-        return f"#{self._commit_ticket}"
+        """Ticket Number"""
+        return self._commit_ticket
 
     @property
     def url(self):
@@ -123,7 +123,7 @@ class Change:
         """Ticket labels."""
         if self._ticketdata:
             return [
-                ChangeAspect(x)
+                ChangeClass(x)
                 for x in self._ticketdata.labels
                 if "[subsystem" in x.description
             ]
@@ -134,7 +134,7 @@ class Change:
         """Ticket classes."""
         if self._ticketdata:
             return [
-                ChangeAspect(x)
+                ChangeClass(x)
                 for x in self._ticketdata.labels
                 if "[class" in x.description
             ]
@@ -145,6 +145,13 @@ class Change:
         """Is this issue marked as highlighted?"""
         if self._ticketdata:
             return "Highlight" in [x.name for x in self._ticketdata.labels]
+        return False
+
+    @property
+    def is_new_feature(self):
+        """Is this issue marked as new feature?"""
+        if self._ticketdata:
+            return "New Feature" in [x.name for x in self._ticketdata.labels]
         return False
 
     @property
@@ -199,34 +206,56 @@ def _header(text: str, level: int = 2):
     print("#" * level + f" {text}")
 
 
+def _find_latest_tag():
+    # get the latest tag
+    latest_tag = utils.system(
+        [
+            "git",
+            "for-each-ref",
+            "refs/tags/v*",
+            "--sort=-creatordate",
+            "--format=%(refname)",
+            "--count=1",
+        ]
+    )
+    return latest_tag.replace("refs/tags/", "")
+
+
+def _find_previous_tag():
+    # get the latest tag
+    last_three_tags = utils.system(
+        [
+            "git",
+            "for-each-ref",
+            "refs/tags/v*",
+            "--sort=-creatordate",
+            "--format=%(refname)",
+            "--count=2",
+        ]
+    )
+    tags = last_three_tags.splitlines()
+    # Example
+    # refs/tags/v4.8.10.22040+1743
+    # refs/tags/v4.8.9.21361+0320
+    if len(tags) == 2:
+        return tags[1].replace("refs/tags/", "")
+    return _find_latest_tag()
+
+
+def _collect_changes(tag: str, fetch_info: bool = True):
+    gitlog_report = utils.system(
+        ["git", "log", "--pretty=format:%h %s%n%b%n/", f"{tag}..HEAD"]
+    )
+    return _find_changes(gitlog_report, fetch_info=fetch_info)
+
+
 def report_changelog(args: Dict[str, str]):
     """Report changes from given <tag> to HEAD
     Queries github issue information for better reporting
     """
-    target_tag = args["<tag>"]
-    if not target_tag:
-        # get the latest tag
-        latest_tag = utils.system(
-            [
-                "git",
-                "for-each-ref",
-                "refs/tags/v*",
-                "--sort=-creatordate",
-                "--format=%(refname)",
-                "--count=1",
-            ]
-        )
-        target_tag = latest_tag.replace("refs/tags/", "")
-        args["<tag>"] = target_tag
+    target_tag = args["<tag>"] or _find_latest_tag()
 
-    # print(f"Target tag is: {target_tag}")
-
-    gitlog_report = utils.system(
-        ["git", "log", "--pretty=format:%h %s%n%b%n/", f"{target_tag}..HEAD"]
-    )
-
-    # print("Parsing git log for changes...")
-    all_changes = _find_changes(gitlog_report, fetch_info=True)
+    all_changes = _collect_changes(target_tag, fetch_info=True)
 
     # groups changes (and purge)
     changes_by_subsystem = defaultdict(list)
@@ -242,7 +271,7 @@ def report_changelog(args: Dict[str, str]):
     # report highlights
     _header("Highlights", level=1)
     for change in all_changes:
-        if change.is_highlighted:
+        if change.is_highlighted or change.is_new_feature:
             print(change)
 
     # report changes by groups in order
@@ -258,56 +287,87 @@ def generate_release_notes(args: Dict[str, str]):
     Queries github issue information for better reporting
     """
     # print downloads section
-    build_version = props.get_version()
+    install_version = props.get_version(install=True)
+    install_version_urlsafe = props.get_version(install=True, url_safe=True)
 
-    build_version_urlsafe = build_version.replace("+", "%2B")
     base_url = (
         "https://github.com/eirannejad/pyRevit/"
-        f"releases/download/v{build_version_urlsafe}/"
+        f"releases/download/v{install_version_urlsafe}/"
     )
 
     # add easy download links
     print("# Downloads")
+    print(
+        ":small_blue_diamond: See **Assets** "
+        "section below for all download options"
+    )
+    print("### pyRevit")
     pyrevit_installer = (
-        configs.PYREVIT_INSTALLER_NAME.format(version=build_version) + ".exe"
+        configs.PYREVIT_INSTALLER_NAME.format(version=install_version) + ".exe"
     )
     print(
-        "- [pyRevit {version} Installer]({url})".format(
-            version=build_version, url=base_url + pyrevit_installer
+        "- :package: [pyRevit {version} Installer]({url})".format(
+            version=install_version, url=base_url + pyrevit_installer
         )
     )
 
     pyrevit_admin_installer = (
-        configs.PYREVIT_ADMIN_INSTALLER_NAME.format(version=build_version)
+        configs.PYREVIT_ADMIN_INSTALLER_NAME.format(version=install_version)
         + ".exe"
     )
     print(
-        "- [pyRevit {version} Installer - "
-        "Admin / All Users / %PROGRAMDATA%]({url})".format(
-            version=build_version, url=base_url + pyrevit_admin_installer
+        "- :package: [pyRevit {version} Installer]({url}) "
+        "- Admin / All Users / %PROGRAMDATA%".format(
+            version=install_version, url=base_url + pyrevit_admin_installer
         )
     )
 
-    pyrevit_cli_installer = (
-        configs.PYREVIT_CLI_INSTALLER_NAME.format(version=build_version)
-        + ".exe"
-    )
-    print(
-        "- [pyRevit CLI {version} Installer]({url})".format(
-            version=build_version, url=base_url + pyrevit_cli_installer
-        )
-    )
+    print("### pyRevit CLI (Command line utility)")
+    # pyrevit_cli_installer = (
+    #     configs.PYREVIT_CLI_INSTALLER_NAME.format(version=build_version)
+    #     + ".exe"
+    # )
+    # print(
+    #     "- [pyRevit CLI {version} Installer - User %PATH%]({url})".format(
+    #         version=build_version, url=base_url + pyrevit_cli_installer
+    #     )
+    # )
 
     pyrevit_cli_admin_installer = (
-        configs.PYREVIT_CLI_ADMIN_INSTALLER_NAME.format(version=build_version)
+        configs.PYREVIT_CLI_ADMIN_INSTALLER_NAME.format(version=install_version)
         + ".exe"
     )
     print(
-        "- [pyRevit CLI {version} Installer - "
-        "Admin / All Users / %PROGRAMDATA%]({url})".format(
-            version=build_version, url=base_url + pyrevit_cli_admin_installer
+        "- :package: [pyRevit CLI {version} Installer]({url}) "
+        "- Admin / System %PATH%".format(
+            version=install_version, url=base_url + pyrevit_cli_admin_installer
         )
     )
 
     # output change log
     report_changelog(args)
+
+
+def notify_issues(args: Dict[str, str]):
+    """Notifies issue threads from <tag> to HEAD"""
+    build_version = props.get_version()
+    target_build = args["<build>"]
+    target_url = args["<url>"]
+    target_tag = args["<tag>"]
+
+    link = f"[{build_version}]({target_url})"
+    if target_build == "release":
+        comment = f":package: New public release are available for {link}"
+        target_tag = target_tag or _find_previous_tag()
+    elif target_build == "wip":
+        comment = f":package: New work-in-progress (wip) builds are available for {link}"
+        target_tag = target_tag or _find_latest_tag()
+
+    print(f"Fetching changes up to {target_tag}")
+    all_changes = _collect_changes(target_tag, fetch_info=False)
+
+    print(f'Notify comment "{comment}"')
+    for change in all_changes:
+        if change.ticket:
+            print(f"Notifying {change.ticket}")
+            github.post_comment(change.ticket, comment)

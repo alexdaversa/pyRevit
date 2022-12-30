@@ -94,6 +94,7 @@ class SettingsWindow(forms.WPFWindow):
             '2020': self.revit2020_cb,
             '2021': self.revit2021_cb,
             '2022': self.revit2022_cb,
+            '2023': self.revit2023_cb,
             }
 
         self.set_image_source(self.lognone, 'lognone.png')
@@ -1001,5 +1002,7 @@ def __selfinit__(script_cmp, ui_button_cmp, __rvt__):
 if __name__ == '__main__':
     if __shiftclick__:  #pylint: disable=E0602
         script.show_file_in_explorer(user_config.config_file)
+    elif user_config.is_readonly:
+        forms.alert('pyRevit settings are set by your admin.', exitscript=True)
     else:
         SettingsWindow('SettingsWindow.xaml').show_dialog()

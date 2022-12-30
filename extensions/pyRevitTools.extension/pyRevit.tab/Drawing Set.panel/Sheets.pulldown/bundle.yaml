@@ -1,4 +1,5 @@
 title:
+  ru: Листы
   en_us: Sheets
   fr_fr: Feuilles
 layout:
@@ -15,7 +16,6 @@ layout:
   - List TitleBlocks on Sheets
   - Set Crop Region To Selected Shape
   - Open Selected Viewport
-  - View Ordering Tool
   - -----
   - ReOrder Sheets
   - Rename PDF Sheets

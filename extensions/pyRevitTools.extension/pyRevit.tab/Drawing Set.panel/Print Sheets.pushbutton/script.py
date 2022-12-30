@@ -1397,6 +1397,8 @@ def cleanup_sheetnumbers(doc):
 
 # verify model is printable
 forms.check_modeldoc(exitscript=True)
+# ensure there is nothing selected
+revit.selection.get_selection().clear()
 
 # TODO: add copy filenames to sheet list
 if __shiftclick__:  #pylint: disable=E0602

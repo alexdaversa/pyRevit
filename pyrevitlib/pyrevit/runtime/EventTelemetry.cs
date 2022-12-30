@@ -4,7 +4,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
-using Autodesk.Revit.ApplicationServices;
 using Autodesk.Revit.DB;
 using Autodesk.Revit.DB.Events;
 using Autodesk.Revit.UI;
@@ -134,8 +133,14 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
             // some print parameters throw exceptions
             try {
+#if REVIT2023
+                marginx = printParams.OriginOffsetX;
+                marginy = printParams.OriginOffsetY;
+
+#else
                 marginx = printParams.UserDefinedMarginX;
                 marginy = printParams.UserDefinedMarginY;
+#endif
             }
             catch {
                 marginx = marginy = 0.0;
