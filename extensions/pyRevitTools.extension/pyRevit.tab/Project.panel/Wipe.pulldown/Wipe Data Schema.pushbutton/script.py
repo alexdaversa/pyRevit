@@ -1,8 +1,9 @@
 """Erase selected data schema and its entities."""
 
 from pyrevit import revit, DB
-from pyrevit import forms
+from pyrevit import forms, HOST_APP
 
+doc = revit.doc
 
 class DataSchemaItem(forms.TemplateListItem):
     @property
@@ -12,13 +13,19 @@ class DataSchemaItem(forms.TemplateListItem):
 
 schemas = DB.ExtensibleStorage.Schema.ListSchemas()
 
-sschema = \
+sschemas = \
     forms.SelectFromList.show([DataSchemaItem(x) for x in schemas],
-                              multiselect=False)
+                              multiselect=True) or []
 
-if sschema:
+for sschema in sschemas:
     with revit.Transaction("Remove Schema"):
-        DB.ExtensibleStorage.Schema.EraseSchemaAndAllEntities(
-            schema=sschema,
-            overrideWriteAccessWithUserPermission=True
-            )
+        try:
+            if HOST_APP.version > 2020:
+                DB.ExtensibleStorage.Schema.EraseSchemaAndAllEntities(
+                    schema=sschema,
+                    overrideWriteAccessWithUserPermission=True
+                )
+            else:
+                doc.EraseSchemaAndAllEntities(sschema)
+        except Exception as e:
+            print(e)

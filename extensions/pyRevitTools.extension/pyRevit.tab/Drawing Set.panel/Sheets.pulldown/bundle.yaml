@@ -15,8 +15,8 @@ layout:
   - Rename Selected Sheets
   - List TitleBlocks on Sheets
   - Set Crop Region To Selected Shape
+  - Set Views Crop Box Line Weight
   - Open Selected Viewport
-  - View Ordering Tool
   - -----
   - ReOrder Sheets
   - Rename PDF Sheets
